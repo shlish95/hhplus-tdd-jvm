@@ -20,6 +20,8 @@ public class PointService {
 
     public UserPoint charge(Long id, Long amount) {
         UserPoint userPoint = selectById(id);
+        pointValidate(userPoint, amount, TransactionType.CHARGE);
+
         long currentPoint = userPoint.point() + amount;
 
         pointHistoryTable.insert(id, currentPoint, TransactionType.CHARGE, userPoint.updateMillis());
@@ -29,6 +31,8 @@ public class PointService {
 
     public UserPoint use(Long id, Long amount) {
         UserPoint userPoint = selectById(id);
+        pointValidate(userPoint, amount, TransactionType.USE);
+
         long currentPoint = userPoint.point() - amount;
 
         pointHistoryTable.insert(id, currentPoint, TransactionType.USE, userPoint.updateMillis());
@@ -37,8 +41,21 @@ public class PointService {
     }
 
     public List<PointHistory> history(Long id) {
-        List<PointHistory> pointHistories = pointHistoryTable.selectAllByUserId(id);
+        List<PointHistory> pointHistory = pointHistoryTable.selectAllByUserId(id);
 
-        return pointHistories;
+        return pointHistory;
     }
+
+    private void pointValidate(UserPoint userPoint, Long amount, TransactionType transactionType) {
+        if (0 >= amount) {
+            throw new IllegalArgumentException("포인트는 1이상을 입력해 주세요.");
+        }
+
+        if (transactionType == TransactionType.USE) {
+            userPoint.checkLessThanZero(userPoint, amount);
+        } else if (transactionType == TransactionType.CHARGE) {
+            userPoint.checkGreaterThanMax(userPoint, amount);
+        }
+    }
+
 }

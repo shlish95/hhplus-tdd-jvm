@@ -1,5 +1,6 @@
 package io.hhplus.tdd.point;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,6 @@ class PointServiceTest {
     private PointService pointService;
 
 
-    @DisplayName("포인트 충전 및 조회")
     @Test
     void 포인트_충전_및_조회() {
         //given
@@ -34,13 +34,12 @@ class PointServiceTest {
         assertEquals(userPointB.point(), firstPoint + secondPoint);
     }
 
-    @DisplayName("포인트 사용 및 조회")
     @Test
     void 포인트_사용_및_조회() {
         //given
-        long id = 1L;
-        long beforPoint = 10000L;
-        long afterPoint = 1000L;
+        long id = 3L;
+        long beforPoint = 1000L;
+        long afterPoint = 100L;
         UserPoint beforUserPoint = pointService.charge(id, beforPoint);
 
         //when
@@ -50,11 +49,10 @@ class PointServiceTest {
         assertEquals(afterUserPoint.point(), beforPoint - afterPoint);
     }
 
-    @DisplayName("포인트 히스토리 조회")
     @Test
     void 포인트_히스토리_조회() {
         //given
-        long id = 1L;
+        long id = 4L;
         long chargedPoint = 1000L;
         long usePoint = 100L;
 
@@ -70,5 +68,63 @@ class PointServiceTest {
         assertEquals(chargedPoint - usePoint, history.get(1).amount());
         assertEquals(history.get(0).type(), TransactionType.CHARGE);
         assertEquals(history.get(1).type(), TransactionType.USE);
+    }
+
+    @Test
+    void 포인트_0이하_충전_및_사용() {
+        //given
+        long id = 5L;
+        long chargedPoint1 = 0L;
+        long chargedPoint2 = -10L;
+
+        //when
+        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class,
+                () -> pointService.charge(id, chargedPoint1));
+        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,
+                () -> pointService.charge(id, chargedPoint2));
+
+        IllegalArgumentException exception3 = assertThrows(IllegalArgumentException.class,
+                () -> pointService.use(id, chargedPoint1));
+        IllegalArgumentException exception4 = assertThrows(IllegalArgumentException.class,
+                () -> pointService.use(id, chargedPoint2));
+
+        //then
+        assertEquals(exception1.getMessage(), "포인트는 1이상을 입력해 주세요.");
+        assertEquals(exception2.getMessage(), "포인트는 1이상을 입력해 주세요.");
+
+        assertEquals(exception3.getMessage(), "포인트는 1이상을 입력해 주세요.");
+        assertEquals(exception4.getMessage(), "포인트는 1이상을 입력해 주세요.");
+    }
+
+    @Test
+    void 포인트가_0보다_작아질때() {
+        //given
+        long id = 6L;
+        long chargedPoint = 100L;
+        long usePoint = 1000L;
+
+        //when
+        pointService.charge(id, chargedPoint);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> pointService.use(id, usePoint));
+
+        //then
+        assertEquals(exception.getMessage(), "포인트가 부족합니다.");
+    }
+
+    @Test
+    void 최대_보유_포인트보다_클때() {
+        //given
+        long id = 7L;
+        long ownPoint = 80000L;
+        long chargedPoint = 30000L;
+
+        //when
+        pointService.charge(id, ownPoint);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> pointService.charge(id, chargedPoint));
+
+        //then
+        assertEquals(exception.getMessage(), "최대 보유 가능한 포인트를 넘었습니다.");
     }
 }
