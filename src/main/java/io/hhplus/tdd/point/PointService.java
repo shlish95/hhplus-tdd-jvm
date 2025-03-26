@@ -46,7 +46,7 @@ public class PointService {
         return pointHistory;
     }
 
-    private void pointValidate(UserPoint userPoint, Long amount, TransactionType transactionType) {
+    public void pointValidate(UserPoint userPoint, Long amount, TransactionType transactionType) {
         if (0 >= amount) {
             throw new IllegalArgumentException("포인트는 1이상을 입력해 주세요.");
         }

@@ -1,7 +1,5 @@
 package io.hhplus.tdd.point;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -125,6 +123,6 @@ class PointServiceTest {
                 () -> pointService.charge(id, chargedPoint));
 
         //then
-        assertEquals(exception.getMessage(), "최대 보유 가능한 포인트를 넘었습니다.");
+        assertEquals(exception.getMessage(), "최대 보유 가능한 포인트를 초과하였습니다.");
     }
 }
