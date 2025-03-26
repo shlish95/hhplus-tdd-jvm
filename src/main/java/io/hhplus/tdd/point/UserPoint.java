@@ -24,7 +24,7 @@ public record UserPoint(
         long resultPoint = userPoint.point() + point;
 
         if (resultPoint > maxPoint) {
-            throw new IllegalArgumentException("최대 보유 가능한 포인트를 넘었습니다.");
+            throw new IllegalArgumentException("최대 보유 가능한 포인트를 초과하였습니다.");
         }
     }
 
