@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -14,30 +16,44 @@ public class PointService {
     private final UserPointTable userPointTable;
     private final PointHistoryTable pointHistoryTable;
 
+    private final Lock lock = new ReentrantLock();
+
     public UserPoint selectById(Long id) {
         return userPointTable.selectById(id);
     }
 
     public UserPoint charge(Long id, Long amount) {
-        UserPoint userPoint = selectById(id);
-        pointValidate(userPoint, amount, TransactionType.CHARGE);
+        lock.lock();
 
-        long currentPoint = userPoint.point() + amount;
+        try {
+            UserPoint userPoint = selectById(id);
+            pointValidate(userPoint, amount, TransactionType.CHARGE);
 
-        pointHistoryTable.insert(id, currentPoint, TransactionType.CHARGE, userPoint.updateMillis());
+            long currentPoint = userPoint.point() + amount;
 
-        return userPointTable.insertOrUpdate(userPoint.id(), currentPoint);
+            pointHistoryTable.insert(id, currentPoint, TransactionType.CHARGE, userPoint.updateMillis());
+
+            return userPointTable.insertOrUpdate(userPoint.id(), currentPoint);
+        } finally {
+            lock.unlock();
+        }
+
     }
 
     public UserPoint use(Long id, Long amount) {
-        UserPoint userPoint = selectById(id);
-        pointValidate(userPoint, amount, TransactionType.USE);
+        lock.lock();
+        try {
+            UserPoint userPoint = selectById(id);
+            pointValidate(userPoint, amount, TransactionType.USE);
 
-        long currentPoint = userPoint.point() - amount;
+            long currentPoint = userPoint.point() - amount;
 
-        pointHistoryTable.insert(id, currentPoint, TransactionType.USE, userPoint.updateMillis());
+            pointHistoryTable.insert(id, currentPoint, TransactionType.USE, userPoint.updateMillis());
 
-        return userPointTable.insertOrUpdate(userPoint.id(), currentPoint);
+            return userPointTable.insertOrUpdate(userPoint.id(), currentPoint);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public List<PointHistory> history(Long id) {
